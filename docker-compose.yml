@@ -1,0 +1,18 @@
+version: "2.1"
+services:
+  db:
+    image: redis
+    command: redis-server --appendonly yes
+    volumes:
+      - saunasim_redis:/data
+
+  backend:
+    build: backend
+    depends_on:
+      - db
+
+  nginx:
+    build: nginx
+
+volumes:
+  saunasim_redis:
