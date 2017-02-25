@@ -45,7 +45,7 @@ def add_datapoint():
     redis.zadd(TEMP_KEY, now, "{time}:{data}".format(time=now, data=data))
     print("added datapoint on {}: {}".format(now, data))
 
-    n = redis.zremrangebyscore(TEMP_KEY, 0, time.time() - 60)
+    n = redis.zremrangebyscore(TEMP_KEY, 0, time.time() - 3600)
     print("cleaned up {} datapoints".format(n))
 
 add_datapoint()
