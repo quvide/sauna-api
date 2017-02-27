@@ -4,6 +4,7 @@ from redis import StrictRedis as Redis
 import threading
 import time
 import math
+import requests
 
 TEMP_KEY = "temperature"
 
@@ -12,7 +13,7 @@ redis = Redis("db", decode_responses=True)
 
 def format_point(data):
     data = data.split(":")
-    return {"time": data[0], "temperature": data[1]}
+    return {"time": int(data[0]), "temperature": float(data[1])}
 
 @app.route("/zrangebyscore")
 def zrangebyscore():
@@ -39,13 +40,29 @@ def zrange():
         })
 
 def add_datapoint():
-    threading.Timer(10.0, add_datapoint).start()
+    threading.Timer(0.5, add_datapoint).start()
     now = int(time.time())
-    data = abs(50*math.sin(now/100))+20
+
+    data = requests.get("http://sauna.paivola.fi/api.cgi").text
+    data = float(data.split("\n")[0])
+
+    newest = redis.zrange(TEMP_KEY, -1, -1)[0]
+    if newest:
+        newest = format_point(newest)
+        #print("comparing 2 floats... {} == {}".format(newest["temperature"], data))
+        #print("difference is {}".format(newest["temperature"]-data))
+        if newest["temperature"] == data:
+            #print("abort the mission")
+            return
+
     redis.zadd(TEMP_KEY, now, "{time}:{data}".format(time=now, data=data))
     print("added datapoint on {}: {}".format(now, data))
 
-    n = redis.zremrangebyscore(TEMP_KEY, 0, time.time() - 3600)
+
+def cleanup():
+    threading.Timer(60, cleanup).start()
+    n = redis.zremrangebyscore(TEMP_KEY, 0, time.time() - 3600*24*7)
     print("cleaned up {} datapoints".format(n))
 
 add_datapoint()
+cleanup()

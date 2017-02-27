@@ -4,7 +4,7 @@ services:
     image: redis
     command: redis-server --appendonly yes
     volumes:
-      - saunasim_redis:/data
+      - redis:/data
 
   backend:
     build: backend
@@ -14,9 +14,9 @@ services:
   nginx:
     build: nginx
     ports:
-      - 5000:80
+      - 8181:80
     depends_on:
       - backend
 
 volumes:
-  saunasim_redis:
+  redis:
