@@ -5,11 +5,18 @@ import threading
 import time
 import math
 import requests
+import ruamel.yaml as yaml
 
 TEMP_KEY = "temperature"
 
+with open("config.yaml", "r") as f:
+    CONFIG = yaml.safe_load(f)
+
+    if not CONFIG:
+        exit("Missing configuration file or it is invalid!")
+
 app = Flask(__name__)
-redis = Redis("db", decode_responses=True)
+redis = Redis(CONFIG["redis_host"], decode_responses=True)
 
 def format_point(data):
     data = data.split(":")
