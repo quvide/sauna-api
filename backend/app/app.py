@@ -13,7 +13,7 @@ import RPi.GPIO as gpio
 ##################
 
 TEMP_KEY = "temperature"
-DOOR_KEY = "door"
+DOOR_KEY = "door_open"
 
 with open("config.yaml", "r") as f:
     CONFIG = yaml.safe_load(f)
@@ -30,7 +30,6 @@ redis = Redis(CONFIG["redis_host"], decode_responses=True)
 
 def encode_point(time, data):
     return "{}:{}".format(time, data)
-
 
 def format_point(point, data_type):
 
@@ -82,7 +81,7 @@ def zrangebyscore():
         _min = float(_min)
     
     if _max != "+inf" and _max != "-inf":
-        _max = float(_min)
+        _max = float(_max)
 
     temp_points = redis.zrangebyscore(TEMP_KEY, _min, _max)
     door_points = redis.zrangebyscore(DOOR_KEY, _min, _max)
@@ -160,9 +159,9 @@ cleanup()
 # have some fresh data to read.
 
 def door_changed():
-    # remember: door closed = HIGH, door open = LOW
-    # HIGH = 1 = True, LOW = 0 = False
-    door_open = not gpio.input(CONFIG["pin"])
+    # remember: door closed = LOW  = 0 (closed circuit to ground),
+    #                  open = HIGH = 1 (circuit is open and pulled up to 3.3V internally)
+    door_open = gpio.input(CONFIG["pin"])
     now = time.time()
 
     redis.zadd(DOOR_KEY, now, encode_point(now, door_open))
@@ -170,3 +169,6 @@ def door_changed():
 gpio.setmode(gpio.BCM)
 gpio.setup(CONFIG["pin"], gpio.IN, pull_up_down=gpio.PUD_UP)
 gpio.add_event_detect(CONFIG["pin"], gpio.BOTH, callback=door_changed)
+
+# Ensure we have some initial data
+door_changed()
