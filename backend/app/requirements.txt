@@ -3,3 +3,4 @@ redis
 uwsgi
 requests
 ruamel.yaml
+RPi.GPIO
