@@ -43,7 +43,7 @@ def format_points(points, type):
     if type == TEMP_KEY:
         data_type = float
     elif type == DOOR_KEY:
-        data_type = bool
+        data_type = lambda x: bool(int(x))
 
     res = []
     for point in points:
@@ -106,6 +106,12 @@ def zrange():
 def zcard():
     return jsonify({TEMP_KEY: redis.zcard(TEMP_KEY), DOOR_KEY: redis.zcard(DOOR_KEY)})
 
+@app.route("/zscan")
+def zscan():
+    temp_points = [point[0] for point in redis.zscan_iter(TEMP_KEY)]
+    door_points = [point[0] for point in redis.zscan_iter(DOOR_KEY)]
+
+    return point_wrapper(temp_points, door_points)
 
 ####################
 # Recurring timers #
@@ -159,9 +165,9 @@ cleanup()
 # have some fresh data to read.
 
 def door_changed(channel):
-    # remember: door closed = LOW  = 0 (closed circuit to ground),
-    #                  open = HIGH = 1 (circuit is open and pulled up to 3.3V internally)
-    door_open = gpio.input(CONFIG["pin"])
+    # remember: door closed = LOW  = False (closed circuit to ground),
+    #                  open = HIGH = True  (circuit is open and pulled up to 3.3V internally)
+    door_open = int(gpio.input(CONFIG["pin"]))
     now = time.time()
 
     redis.zadd(DOOR_KEY, now, encode_point(now, door_open))
