@@ -158,17 +158,18 @@ cleanup()
 # epoll to read data and calls our callback function when we
 # have some fresh data to read.
 
-def door_changed():
+def door_changed(channel):
     # remember: door closed = LOW  = 0 (closed circuit to ground),
     #                  open = HIGH = 1 (circuit is open and pulled up to 3.3V internally)
     door_open = gpio.input(CONFIG["pin"])
     now = time.time()
 
     redis.zadd(DOOR_KEY, now, encode_point(now, door_open))
+    print("added door point on {}: {}".format(now, door_open))
 
 gpio.setmode(gpio.BCM)
 gpio.setup(CONFIG["pin"], gpio.IN, pull_up_down=gpio.PUD_UP)
 gpio.add_event_detect(CONFIG["pin"], gpio.BOTH, callback=door_changed)
 
 # Ensure we have some initial data
-door_changed()
+door_changed(CONFIG["pin"])
