@@ -1,6 +1,9 @@
 flask
-redis
+flask-sqlalchemy
 uwsgi
 requests
 ruamel.yaml
 RPi.GPIO
+
+# dev:
+flake8
